@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+  // "native" pour le PC local ; "rhel-openssl-3.0.x" pour l'exécution sur Vercel.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+// ─── LOCAL (actuel) ─────────────────────────────────────────────
+// SQLite, base sur ce PC. Ne rien changer tant que Supabase n'est pas prêt.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── CLOUD (Supabase) — à activer au moment de la bascule ───────
+// Remplacer le bloc datasource ci-dessus par celui-ci :
+//
+// datasource db {
+//   provider  = "postgresql"
+//   url       = env("DATABASE_URL")   // pooler Supabase (port 6543, ?pgbouncer=true)
+//   directUrl = env("DIRECT_URL")     // connexion directe (port 5432, pour les migrations)
+// }
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("STAFF") // ADMIN | STAFF
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  purchases Purchase[]
+  issues    Issue[]
+}
+
+model Person {
+  id         Int      @id @default(autoincrement())
+  name       String
+  department String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  issues Issue[]
+}
+
+model Item {
+  id           Int      @id @default(autoincrement())
+  name         String
+  category     String   @default("AUTRE") // FOURNITURE | PAPETERIE | INFORMATIQUE | NETTOYAGE | CUISINE | AUTRE
+  unit         String   @default("pièce")
+  minThreshold Int      @default(0)
+  location     String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  purchases Purchase[]
+  issues    Issue[]
+}
+
+model Purchase {
+  id          Int      @id @default(autoincrement())
+  itemId      Int
+  item        Item     @relation(fields: [itemId], references: [id])
+  quantity    Int
+  unitPrice   Float?
+  supplier    String?
+  orderedBy   String?
+  note        String?
+  date        DateTime @default(now())
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Issue {
+  id          Int      @id @default(autoincrement())
+  itemId      Int
+  item        Item     @relation(fields: [itemId], references: [id])
+  quantity    Int
+  personId    Int?
+  person      Person?  @relation(fields: [personId], references: [id])
+  note        String?
+  date        DateTime @default(now())
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+}
