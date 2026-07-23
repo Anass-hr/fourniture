@@ -4,21 +4,12 @@ generator client {
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
-// ─── LOCAL (actuel) ─────────────────────────────────────────────
-// SQLite, base sur ce PC. Ne rien changer tant que Supabase n'est pas prêt.
+// ─── SUPABASE (PostgreSQL) ──────────────────────────────────────
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooler transaction (6543, pgbouncer)
+  directUrl = env("DIRECT_URL")   // pooler session (5432) — migrations
 }
-
-// ─── CLOUD (Supabase) — à activer au moment de la bascule ───────
-// Remplacer le bloc datasource ci-dessus par celui-ci :
-//
-// datasource db {
-//   provider  = "postgresql"
-//   url       = env("DATABASE_URL")   // pooler Supabase (port 6543, ?pgbouncer=true)
-//   directUrl = env("DIRECT_URL")     // connexion directe (port 5432, pour les migrations)
-// }
 
 model User {
   id           Int      @id @default(autoincrement())
