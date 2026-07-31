@@ -4,6 +4,25 @@ import { CATEGORY_LABELS, catLabel } from "../constants.js";
 
 const EMPTY = { name: "", category: "PAPETERIE", unit: "pièce", minThreshold: 0, location: "" };
 
+// Échappe une valeur pour un CSV (séparateur point-virgule, compatible Excel FR).
+function csvCell(value) {
+  const s = value == null ? "" : String(value);
+  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+// Télécharge un contenu texte comme fichier. BOM UTF-8 pour les accents dans Excel.
+function downloadCsv(filename, content) {
+  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function Catalog() {
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
@@ -43,11 +62,34 @@ export function Catalog() {
 
   const set = (k, v) => setModal((m) => ({ ...m, data: { ...m.data, [k]: v } }));
 
+  // Exporte l'état de stock (inventaire) en CSV, tel qu'affiché dans le tableau.
+  function exportCsv() {
+    const headers = ["Article", "Catégorie", "Unité", "Stock", "Seuil", "Emplacement", "Stock bas", "Statut"];
+    const rows = items.map((it) => [
+      it.name,
+      catLabel(it.category),
+      it.unit,
+      it.stock,
+      it.minThreshold,
+      it.location || "",
+      it.active && it.low ? "Oui" : "Non",
+      it.active ? "Actif" : "Archivé",
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(csvCell).join(";")).join("\r\n");
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`inventaire-stock-${stamp}.csv`, csv);
+  }
+
   return (
     <div className="stack">
       <div className="page-actions">
         <h1 style={{ margin: 0 }}>Catalogue des articles</h1>
-        <button className="btn" onClick={openNew}>+ Nouvel article</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn secondary" onClick={exportCsv} disabled={items.length === 0}>
+            Exporter CSV
+          </button>
+          <button className="btn" onClick={openNew}>+ Nouvel article</button>
+        </div>
       </div>
       {error && <div className="alert error">{error}</div>}
 
