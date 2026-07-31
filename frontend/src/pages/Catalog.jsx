@@ -64,15 +64,12 @@ export function Catalog() {
 
   // Exporte l'état de stock (inventaire) en CSV, tel qu'affiché dans le tableau.
   function exportCsv() {
-    const headers = ["Article", "Catégorie", "Unité", "Stock", "Seuil", "Emplacement", "Stock bas", "Statut"];
+    const headers = ["Article", "Catégorie", "Unité", "Stock", "Statut"];
     const rows = items.map((it) => [
       it.name,
       catLabel(it.category),
       it.unit,
       it.stock,
-      it.minThreshold,
-      it.location || "",
-      it.active && it.low ? "Oui" : "Non",
       it.active ? "Actif" : "Archivé",
     ]);
     const csv = [headers, ...rows].map((r) => r.map(csvCell).join(";")).join("\r\n");
